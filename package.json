@@ -1,10 +1,14 @@
 {
   "name": "laravel-vite-mix",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Use Vite as Laravel Mix",
   "keywords": [],
   "author": "Hugo Rodrigues",
   "license": "ISC",
+  "repository": "hugoboss17/laravel-vite-mix",
+    "bugs": {
+        "url": "https://github.com/hugoboss17/laravel-vite-mix/issues"
+    },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
