@@ -1,0 +1,40 @@
+{
+  "name": "laravel-vite-mix",
+  "version": "0.0.1",
+  "description": "Use Vite as Laravel Mix",
+  "keywords": [],
+  "author": "Hugo Rodrigues",
+  "license": "ISC",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mix": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "lint": "node -e \"console.log('add eslint if you want')\""
+  },
+  "dependencies": {
+    "@rollup/plugin-inject": "^5.0.5",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "fast-glob": "^3.3.3",
+    "sass": "^1.97.3",
+    "vite": "^7.3.1",
+    "vite-plugin-static-copy": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
