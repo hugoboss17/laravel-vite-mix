@@ -34,4 +34,7 @@ jobs:
         run: npm run verify:pack
 
       - name: Publish
-        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ""
+          NPM_TOKEN: ""
+        run: npm publish --provenance --access public

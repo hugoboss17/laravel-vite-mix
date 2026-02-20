@@ -19,7 +19,7 @@
     "provenance": true
   },
   "bin": {
-    "mix": "./dist/cli.js"
+    "mix": "dist/cli.js"
   },
   "exports": {
     ".": {
