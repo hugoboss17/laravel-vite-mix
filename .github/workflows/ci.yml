@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build and Package Checks (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify package allowlist
+        run: npm run verify:pack
+
+      - name: Pack dry run
+        run: npm_config_cache=/tmp/npm-cache npm pack --dry-run --ignore-scripts
+
+      - name: Audit high vulnerabilities
+        run: npm audit --audit-level=high
+
+  lockfile-governance:
+    name: Lockfile Governance
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Validate lockfile changes for dependency edits
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: npm run check:lockfile
+
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

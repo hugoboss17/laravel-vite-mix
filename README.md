@@ -2,13 +2,11 @@
 
 Use Vite with a Laravel Mix-like API.
 
-## Purpuse
+## Purpose
 
-Laravel mix is not maintained anymore and it's not as secured as Vite.
+Laravel Mix is no longer maintained. This package helps migrate legacy Mix-style build definitions to Vite with minimal frontend structure changes.
 
-With this package you're able to migrate to vite without having to change your frontend structure.
-
-All you have to do is transform your webpack.mix.js into mix.config.mjs
+Convert `webpack.mix.js` behavior into `mix.config.mjs`.
 
 ## Install
 
@@ -33,6 +31,12 @@ mix build --config mix.config.mjs
 ```
 
 Default config path is `mix.config.mjs`.
+
+## Security
+
+- Install from the npm registry package only.
+- Prefer provenance-backed releases and verify checksums/provenance before production rollout.
+- `mix.config.mjs` is executed as code. Only run builds in trusted repositories.
 
 ## Config format
 
@@ -91,6 +95,6 @@ export default (mix) => {
 
 ## Important
 
-Package is still in construction although it's already working on some laravel legacy projects.
+This package is under development.
 
 Feel free to contribute.
