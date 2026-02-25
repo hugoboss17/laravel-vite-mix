@@ -3,7 +3,6 @@ name: Release
 on:
   release:
     types: [published]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,6 +23,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm audit --audit-laravel=high
       - run: npm run build
       - run: npm run verify:pack
 
