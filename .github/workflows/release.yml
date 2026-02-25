@@ -30,4 +30,4 @@ jobs:
       - run: npm run verify:pack
 
       - name: Publish
-        run: npm publish --access public
+        run: npm publish --provenance --access public
