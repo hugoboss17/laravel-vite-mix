@@ -19,15 +19,15 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      - run: npm audit --audit-laravel=high
+      - run: npm audit --audit-level=high
       - run: npm run build
       - run: npm run verify:pack
 
       - name: Publish
-        run: npm publish
+        run: npm publish --access public
