@@ -8,22 +8,17 @@ on:
 
 jobs:
   build:
-    name: Build and Package Checks (Node ${{ matrix.node }})
+    name: Build and Package Checks
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node: [20, 22]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 22
           cache: npm
 
       - name: Install dependencies

@@ -13,21 +13,18 @@ jobs:
     name: Publish to npm
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
-          registry-url: 'https://registry.npmjs.org'
-
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+        
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run lint
       - run: npm test
       - run: npm audit --audit-level=high
       - run: npm run build
       - run: npm run verify:pack
-
-      - name: Publish
-        run: npm publish --access public
+      - run: NODE_AUTH_TOKEN="" npm publish --access public --provenance
