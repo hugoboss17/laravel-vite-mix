@@ -1,6 +1,6 @@
 {
   "name": "laravel-vite-mix",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Use Vite as Laravel Mix",
   "keywords": [],
   "author": {
