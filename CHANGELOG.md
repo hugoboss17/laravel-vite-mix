@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/hugoboss17/laravel-vite-mix/compare/laravel-vite-mix-v0.1.2...laravel-vite-mix-v0.1.3) (2026-03-06)
+
+
+### Bug Fixes
+
+* release auth process ([2b42b69](https://github.com/hugoboss17/laravel-vite-mix/commit/2b42b6929899b2529475ca5be7a6b477c361b9d9))
+* release auth process ([5799932](https://github.com/hugoboss17/laravel-vite-mix/commit/57999323ba07998c91dfd51d3116a1d6f12c2c6b))
+
 ## [0.1.2](https://github.com/hugoboss17/laravel-vite-mix/compare/laravel-vite-mix-v0.1.1...laravel-vite-mix-v0.1.2) (2026-03-06)
 
 
