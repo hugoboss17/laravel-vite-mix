@@ -23,7 +23,7 @@ export type MixGraph = {
   define: Record<string, any>;
   options: MixOptions;
   versioning: boolean;
-  rawWebpackConfigFn?: (webpack: any) => any; // for compat capture
+  rawWebpackConfigFn?: (webpack: any) => any;
 };
 
 function normalizePublicPath(p: string) {
@@ -67,7 +67,6 @@ export class Mix {
   }
 
   vue(opts: VueOptions) {
-    // apply to the last js() call, like Mix
     const last = this.graph.js[this.graph.js.length - 1];
     if (last) last.vue = opts;
     return this;
@@ -84,7 +83,6 @@ export class Mix {
   }
 
   copy(src: string, dest: string) {
-    // dest can be folder or file; keep as-is and resolve later
     this.graph.copies.push({ src, dest });
     return this;
   }
@@ -105,7 +103,6 @@ export class Mix {
   }
 
   webpackConfig(fn: (webpack: any) => any) {
-    // We *capture* it, then the Vite driver translates what it can.
     this.graph.rawWebpackConfigFn = fn;
     return this;
   }
@@ -119,7 +116,6 @@ export class Mix {
     return process.env.NODE_ENV === "production";
   }
 
-  // what drivers consume
   toGraph(): MixGraph {
     return {
       publicPath: this.graph.publicPath,
@@ -145,7 +141,6 @@ export function mix() {
   return new Mix();
 }
 
-// Helpers for path decisions
 export function isFilePath(p: string) {
   return /\.[a-z0-9]+$/i.test(path.basename(p));
 }

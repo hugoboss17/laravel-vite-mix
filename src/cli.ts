@@ -4,8 +4,9 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { mix, type MixGraph } from "./index.js";
-import { runViteBuild, runViteDev, viteConfigFromGraph } from "./driver-vite.js";
+import { viteConfigFromGraph } from "./driver-vite.js";
 import { build as viteBuild } from "vite";
+import fg from "fast-glob";
 
 function usage() {
   console.log(`
@@ -21,7 +22,12 @@ function parseArgs() {
   const args = process.argv.slice(2);
   const cmd = args[0];
   const configIdx = args.indexOf("--config");
-  const configPath = configIdx !== -1 ? args[configIdx + 1] : "mix.config.mjs";
+  const configValue = configIdx !== -1 ? args[configIdx + 1] : undefined;
+  if (configIdx !== -1 && !configValue) {
+    console.error("error: --config requires a file path argument");
+    process.exit(1);
+  }
+  const configPath = configValue ?? "mix.config.mjs";
   return { cmd, configPath };
 }
 
@@ -59,7 +65,7 @@ function generateCombineEntries(graph: MixGraph) {
 
     const lines = combo.sources.map((src) => {
       const abs = path.resolve(src);
-      return `@import "${abs.replace(/\\/g, "/")}";`;
+      return `@import "${abs.replace(/\\/g, "/").replace(/"/g, '\\"')}";`;
     });
 
     fs.writeFileSync(entryPath, lines.join("\n") + "\n", "utf8");
@@ -67,10 +73,10 @@ function generateCombineEntries(graph: MixGraph) {
 }
 
 async function addCombineEntriesToViteInput(graph: MixGraph, mode: "development" | "production") {
-  const cfg: any = viteConfigFromGraph(graph, mode);
+  const cfg: any = await viteConfigFromGraph(graph, mode);
   const tmpGlob = fs.existsSync(".mix-tmp") ? ".mix-tmp/_bundles/*.entry.css" : null;
   if (tmpGlob) {
-    const entries = (await import("fast-glob")).default.sync(tmpGlob);
+    const entries = fg.sync(tmpGlob);
     for (const file of entries) {
       const key = `_bundles/${path.basename(file).replace(/\.entry\.css$/, "")}`;
       cfg.build.rollupOptions.input[key] = path.resolve(file);
