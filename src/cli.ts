@@ -65,7 +65,7 @@ function generateCombineEntries(graph: MixGraph) {
 
     const lines = combo.sources.map((src) => {
       const abs = path.resolve(src);
-      return `@import "${abs.replace(/\\/g, "/").replace(/"/g, '\\"')}";`;
+      return `@import "${abs.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}";`;
     });
 
     fs.writeFileSync(entryPath, lines.join("\n") + "\n", "utf8");
