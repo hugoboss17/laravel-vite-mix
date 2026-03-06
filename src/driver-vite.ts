@@ -1,8 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
-import fg from "fast-glob";
-import { build, createServer, type InlineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import { createServer, type InlineConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import inject from "@rollup/plugin-inject";
 import type { MixGraph } from "./index.js";
@@ -15,6 +13,10 @@ function relKeyFromResources(file: string) {
 
 function ensurePosix(p: string) {
   return p.split(path.sep).join("/");
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function translateDefineFromWebpackFn(graph: MixGraph) {
@@ -66,8 +68,6 @@ function webpackCompatResolvePlugin() {
           if (hasFile(vueIndex)) return vueIndex;
         }
 
-        // Some legacy imports use "../Board" from ".../Board/CrmActivity/*"
-        // while the actual file is ".../Board/index.vue".
         const parentDir = path.dirname(abs);
         if (path.basename(abs) === path.basename(parentDir)) {
           const parentIndexVue = path.join(parentDir, "index.vue");
@@ -88,7 +88,7 @@ function webpackCompatResolvePlugin() {
   };
 }
 
-export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "production"): InlineConfig {
+export async function viteConfigFromGraph(graph: MixGraph, mode: "development" | "production"): Promise<InlineConfig> {
   const isProd = mode === "production";
 
   const input: Record<string, string> = {};
@@ -106,7 +106,7 @@ export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "prod
   const staticTargets: Array<{ src: string; dest: string; rename?: string }> = [];
 
   for (const c of graph.copies) {
-    const normalizedDest = ensurePosix(c.dest).replace(new RegExp(`^${ensurePosix(graph.publicPath)}/?`), "");
+    const normalizedDest = ensurePosix(c.dest).replace(new RegExp(`^${escapeRegExp(ensurePosix(graph.publicPath))}/?`), "");
     const destDir = path.posix.dirname(normalizedDest);
     const base = path.posix.basename(normalizedDest);
 
@@ -119,7 +119,7 @@ export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "prod
   }
 
   for (const cd of graph.copyDirs) {
-    const normalizedDest = ensurePosix(cd.dest).replace(new RegExp(`^${ensurePosix(graph.publicPath)}/?`), "");
+    const normalizedDest = ensurePosix(cd.dest).replace(new RegExp(`^${escapeRegExp(ensurePosix(graph.publicPath))}/?`), "");
     staticTargets.push({
       src: ensurePosix(cd.src) + "/**/*",
       dest: normalizedDest,
@@ -133,11 +133,14 @@ export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "prod
   const plugins: any[] = [webpackCompatResolvePlugin()];
 
   const wantsVue3 = graph.js.some((e) => e.vue?.version === 3);
-  if (wantsVue3) plugins.push(vue());
+  if (wantsVue3) {
+    const { default: vue } = await import("@vitejs/plugin-vue");
+    plugins.push(vue());
+  }
 
   if (wantsJquery) {
     plugins.push({
-      ...inject({
+      ...(inject as any)({
         $: "jquery",
         jQuery: "jquery",
         "window.jQuery": "jquery",
@@ -156,11 +159,8 @@ export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "prod
 
   return {
     resolve: {
-      // Match legacy webpack resolution so imports like "../Board" can resolve "../Board.vue".
       extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
       alias: [
-        // Webpack-era Sass imports often use "~pkg/path" for node_modules.
-        // Vite doesn't require "~", so strip it for compatibility.
         { find: /^~(.*)$/, replacement: "$1" },
       ],
     },
@@ -177,7 +177,7 @@ export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "prod
           ? {
               entryFileNames: `js/[name]-[hash].js`,
               assetFileNames: (assetInfo) => {
-                const name = assetInfo.name || "";
+                const name = assetInfo.names[0] || "";
                 if (name.endsWith(".css")) return `css/[name]-[hash][extname]`;
                 return `assets/[name]-[hash][extname]`;
               },
@@ -185,7 +185,7 @@ export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "prod
           : {
               entryFileNames: `js/[name].js`,
               assetFileNames: (assetInfo) => {
-                const name = assetInfo.name || "";
+                const name = assetInfo.names[0] || "";
                 if (name.endsWith(".css")) return `css/${name}`;
                 return `assets/${name}`;
               },
@@ -198,12 +198,8 @@ export function viteConfigFromGraph(graph: MixGraph, mode: "development" | "prod
   };
 }
 
-export async function runViteBuild(graph: MixGraph) {
-  await build(viteConfigFromGraph(graph, "production"));
-}
-
 export async function runViteDev(graph: MixGraph) {
-  const server = await createServer(viteConfigFromGraph(graph, "development"));
+  const server = await createServer(await viteConfigFromGraph(graph, "development"));
   await server.listen();
   server.printUrls();
 }
