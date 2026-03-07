@@ -6,90 +6,91 @@ Use Vite with a Laravel Mix-like API.
 
 Laravel Mix is no longer maintained. This package helps migrate legacy Mix-style build definitions to Vite with minimal frontend structure changes.
 
-Convert `webpack.mix.js` behavior into `mix.config.mjs`.
-
 ## Install
 
 ```bash
 npm install laravel-vite-mix
 ```
 
-## CLI
-
-After installing, use:
+Peer dependencies (install only what you need):
 
 ```bash
-mix --development
-mix --production
+npm install --save-dev vite                  # required
+npm install --save-dev sass                  # if using .scss/.sass
+npm install --save-dev @vitejs/plugin-vue    # if using Vue 3
 ```
 
-Options:
+## Usage
 
-```bash
-mix --development --config mix.config.mjs
-mix --production --config mix.config.mjs
-```
-
-Default config path is `mix.config.mjs`.
-
-
-## Config format
-
-Create a `mix.config.mjs` in your project root:
+Replace your `webpack.mix.js` with `vite.config.js` with a Mix-style definition:
 
 ```js
-export default (mix) => {
-  mix.setPublicPath("public");
+// vite.config.js
+import { defineConfig } from "vite";
+import { mix, viteConfigFromGraph } from "laravel-vite-mix";
 
-  mix.js("resources/assets/js/app.js", "public/js").vue({ version: 3 });
-  mix.sass("resources/assets/sass/app.scss", "public/css");
-  mix.css("resources/assets/css/simple.css", "public/css");
+const m = mix()
+  .setPublicPath("public")
+  .js("resources/assets/js/app.js", "public/js")
+  .vue({ version: 3 })
+  .sass("resources/assets/sass/app.scss", "public/css")
+  .css("resources/assets/css/simple.css", "public/css")
+  .copy("resources/assets/images/logo.png", "public/images/logo.png")
+  .copyDirectory("resources/assets/fonts", "public/fonts")
+  .autoload({ jquery: ["$", "jQuery", "window.jQuery"] })
+  .version();
 
-  mix.copy("resources/assets/images/logo.png", "public/images/logo.png");
-  mix.copyDirectory("resources/assets/fonts", "public/fonts");
+const mode = process.env.NODE_ENV === "production" ? "production" : "development";
 
-  mix.combine(
-    [
-      "resources/assets/css/a.css",
-      "resources/assets/css/b.css",
-    ],
-    "public/css/bundle.css"
-  );
+export default defineConfig(async () => await viteConfigFromGraph(m.toGraph(), mode));
+```
 
-  mix.autoload({
-    jquery: ["$", "jQuery", "window.jQuery"],
-  });
+Add scripts to your `package.json`:
 
-  mix.version();
-};
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "watch": "vite build --watch"
+  }
+}
+```
+
+Then run:
+
+```bash
+npm run build    # production
+npm run watch    # watch mode
+npm run dev      # dev server
 ```
 
 ## Supported API
 
-- `mix.setPublicPath(path)`
-- `mix.options(opts)`
-- `mix.js(src, dest)`
-- `mix.vue({ version: 3 })`
-- `mix.sass(src, dest)`
-- `mix.css(src, dest)`
-- `mix.copy(src, dest)`
-- `mix.copyDirectory(src, dest)`
-- `mix.combine(sources, dest)`
-- `mix.autoload(map)`
-- `mix.webpackConfig(fn)` (captured for compatibility)
-- `mix.version()`
-- `mix.inProduction()`
+| Method | Description |
+|---|---|
+| `mix()` | Create a new Mix instance |
+| `.setPublicPath(path)` | Output directory (default: `"public"`) |
+| `.options({ processCssUrls })` | Build options |
+| `.js(src, dest)` | JavaScript/TypeScript entry point |
+| `.vue({ version: 3 })` | Enable Vue plugin for the preceding `.js()` call |
+| `.sass(src, dest)` | Sass/SCSS entry point |
+| `.css(src, dest)` | Plain CSS entry point |
+| `.copy(src, dest)` | Copy a file to the output directory |
+| `.copyDirectory(src, dest)` | Copy a directory to the output directory |
+| `.autoload(map)` | Inject globals (e.g. jQuery) |
+| `.version()` | Enable content hashing in output filenames |
+| `.inProduction()` | Returns `true` when `NODE_ENV=production` |
+| `.toGraph()` | Returns the build graph (pass to `viteConfigFromGraph`) |
+| `viteConfigFromGraph(graph, mode)` | Returns a Vite `InlineConfig` |
 
 ## Webpack compatibility handled
 
-- Sass `~` imports (example: `@import "~bootstrap-sass/assets/stylesheets/bootstrap";`)
-- Extensionless Vue imports (example: `import Component from "../Component";`)
-- Directory Vue imports to `index.vue`
-- Legacy bare asset paths in templates for common asset extensions
-  (example: `src="theme/images/image.png"` resolves from `resources/assets` when present)
+- Sass `~` imports — `@import "~bootstrap-sass/assets/stylesheets/bootstrap"`
+- Extensionless Vue imports — `import Component from "../Component"`
+- Directory Vue imports resolving to `index.vue`
+- Legacy bare asset paths in templates resolving from `resources/assets`
 
-## Important
+## Contributing
 
-This package is under development.
-
-Feel free to contribute.
+Feel free to open issues or pull requests.

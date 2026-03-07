@@ -6,8 +6,6 @@ export type MixOptions = { processCssUrls?: boolean };
 export type CopyTarget = { src: string; dest: string; rename?: string };
 export type CopyDirTarget = { src: string; dest: string };
 
-export type CombineTarget = { sources: string[]; dest: string };
-
 export type CssEntry = { src: string; destDir: string };
 export type JsEntry = { src: string; destDirOrFile: string; vue?: VueOptions };
 
@@ -18,12 +16,9 @@ export type MixGraph = {
   sass: Array<{ src: string; destDir: string }>;
   copies: CopyTarget[];
   copyDirs: CopyDirTarget[];
-  combines: CombineTarget[];
   autoload: Record<string, string[]>;
-  define: Record<string, any>;
   options: MixOptions;
   versioning: boolean;
-  rawWebpackConfigFn?: (webpack: any) => any;
 };
 
 function normalizePublicPath(p: string) {
@@ -43,16 +38,19 @@ export class Mix {
       sass: [],
       copies: [],
       copyDirs: [],
-      combines: [],
       autoload: {},
-      define: {},
       options: {},
       versioning: false,
     };
   }
 
   setPublicPath(p: string) {
-    this.graph.publicPath = normalizePublicPath(p);
+    const normalized = normalizePublicPath(p);
+    const resolved = path.resolve(process.cwd(), normalized);
+    if (resolved !== process.cwd() && !resolved.startsWith(process.cwd() + path.sep)) {
+      throw new Error(`publicPath must be within the project directory: ${p}`);
+    }
+    this.graph.publicPath = normalized;
     return this;
   }
 
@@ -92,18 +90,8 @@ export class Mix {
     return this;
   }
 
-  combine(sources: string[], dest: string) {
-    this.graph.combines.push({ sources, dest });
-    return this;
-  }
-
   autoload(map: Record<string, string[]>) {
     this.graph.autoload = { ...this.graph.autoload, ...map };
-    return this;
-  }
-
-  webpackConfig(fn: (webpack: any) => any) {
-    this.graph.rawWebpackConfigFn = fn;
     return this;
   }
 
@@ -124,15 +112,9 @@ export class Mix {
       sass: this.graph.sass.map((entry) => ({ ...entry })),
       copies: this.graph.copies.map((entry) => ({ ...entry })),
       copyDirs: this.graph.copyDirs.map((entry) => ({ ...entry })),
-      combines: this.graph.combines.map((entry) => ({
-        ...entry,
-        sources: [...entry.sources],
-      })),
       autoload: Object.fromEntries(Object.entries(this.graph.autoload).map(([key, values]) => [key, [...values]])),
-      define: { ...this.graph.define },
       options: { ...this.graph.options },
       versioning: this.graph.versioning,
-      rawWebpackConfigFn: this.graph.rawWebpackConfigFn,
     };
   }
 }
@@ -144,3 +126,5 @@ export function mix() {
 export function isFilePath(p: string) {
   return /\.[a-z0-9]+$/i.test(path.basename(p));
 }
+
+export { viteConfigFromGraph } from "./driver-vite.js";
