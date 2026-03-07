@@ -61,6 +61,11 @@ describe("mix() builder", () => {
     expect(graph.js[1].vue).toEqual({ version: 3 });
   });
 
+  it("vue() on empty js list does nothing", () => {
+    const graph = mix().vue({ version: 3 }).toGraph();
+    expect(graph.js).toHaveLength(0);
+  });
+
   it("autoload() merges multiple calls", () => {
     const graph = mix()
       .autoload({ jquery: ["$"] })
