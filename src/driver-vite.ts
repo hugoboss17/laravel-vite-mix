@@ -19,10 +19,6 @@ function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function translateDefineFromWebpackFn(graph: MixGraph) {
-  return graph.define ?? {};
-}
-
 function hasFile(p: string) {
   try {
     return fs.statSync(p).isFile();
@@ -105,8 +101,18 @@ export async function viteConfigFromGraph(graph: MixGraph, mode: "development" |
 
   const staticTargets: Array<{ src: string; dest: string; rename?: string }> = [];
 
+  const resolvedPublic = path.resolve(graph.publicPath);
+
+  function guardDest(dest: string) {
+    const resolved = path.resolve(graph.publicPath, dest);
+    if (resolved !== resolvedPublic && !resolved.startsWith(resolvedPublic + path.sep)) {
+      throw new Error(`copy destination escapes publicPath: ${dest}`);
+    }
+  }
+
   for (const c of graph.copies) {
     const normalizedDest = ensurePosix(c.dest).replace(new RegExp(`^${escapeRegExp(ensurePosix(graph.publicPath))}/?`), "");
+    guardDest(normalizedDest);
     const destDir = path.posix.dirname(normalizedDest);
     const base = path.posix.basename(normalizedDest);
 
@@ -120,6 +126,7 @@ export async function viteConfigFromGraph(graph: MixGraph, mode: "development" |
 
   for (const cd of graph.copyDirs) {
     const normalizedDest = ensurePosix(cd.dest).replace(new RegExp(`^${escapeRegExp(ensurePosix(graph.publicPath))}/?`), "");
+    guardDest(normalizedDest);
     staticTargets.push({
       src: ensurePosix(cd.src) + "/**/*",
       dest: normalizedDest,
@@ -165,7 +172,6 @@ export async function viteConfigFromGraph(graph: MixGraph, mode: "development" |
       ],
     },
     plugins,
-    define: translateDefineFromWebpackFn(graph),
     build: {
       manifest: true,
       outDir: graph.publicPath,
