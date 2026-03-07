@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0](https://github.com/hugoboss17/laravel-vite-mix/compare/laravel-vite-mix-v0.3.0...laravel-vite-mix-v0.4.0) (2026-03-07)
+
+
+### Features
+
+* codecov + tests without build step ([c542e18](https://github.com/hugoboss17/laravel-vite-mix/commit/c542e1826f6dd32659d8172dd1e321453c8d4a90))
+* codecov + tests without build step ([a97ff1b](https://github.com/hugoboss17/laravel-vite-mix/commit/a97ff1b5fc740a1850d582cf391cf05d4747cc0e))
+* increase code coverage ([c22d0a5](https://github.com/hugoboss17/laravel-vite-mix/commit/c22d0a53385e03a5014294ffec94cc54d4089979))
+
 ## [0.3.0](https://github.com/hugoboss17/laravel-vite-mix/compare/laravel-vite-mix-v0.2.0...laravel-vite-mix-v0.3.0) (2026-03-07)
 
 
