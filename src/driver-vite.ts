@@ -18,6 +18,9 @@ function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+const VALID_IDENT = /^[a-zA-Z_$][\w$]*(\.[a-zA-Z_$][\w$]*)*$/;
+const VALID_MODULE = /^[@a-zA-Z][\w./@-]*$/;
+
 function hasFile(p: string) {
   try {
     return fs.statSync(p).isFile();
@@ -48,9 +51,9 @@ function webpackCompatResolvePlugin() {
     enforce: "pre" as const,
     resolveId(source: string, importer?: string) {
       if (!importer) return null;
-      const isRelativeOrAbsolute = source.startsWith(".") || source.startsWith("/");
+      const isRelative = source.startsWith(".");
 
-      if (isRelativeOrAbsolute && !path.extname(source)) {
+      if (isRelative && !path.extname(source)) {
         const importerPath = importer.split("?")[0];
         const baseDir = path.dirname(importerPath);
         const abs = path.resolve(baseDir, source);
@@ -84,13 +87,17 @@ function webpackCompatResolvePlugin() {
 }
 
 function autoloadPlugin(identMap: Record<string, string>): Plugin {
-  const patterns = Object.entries(identMap).map(([ident, module]) => ({
-    ident,
-    module,
-    localName: ident.startsWith("window.") ? ident.slice(7) : ident,
-    isWindow: ident.startsWith("window."),
-    regex: ident.startsWith("window.") ? null : new RegExp(`(?<![.\\w$])${escapeRegExp(ident)}(?![\\w$])`),
-  }));
+  const patterns = Object.entries(identMap).map(([ident, module]) => {
+    if (!VALID_IDENT.test(ident)) throw new Error(`Invalid autoload identifier: ${ident}`);
+    if (!VALID_MODULE.test(module)) throw new Error(`Invalid autoload module: ${module}`);
+    return {
+      ident,
+      module,
+      localName: ident.startsWith("window.") ? ident.slice(7) : ident,
+      isWindow: ident.startsWith("window."),
+      regex: ident.startsWith("window.") ? null : new RegExp(`(?<![.\\w$])${escapeRegExp(ident)}(?![\\w$])`),
+    };
+  });
 
   return {
     name: "mix-inject",
@@ -127,44 +134,19 @@ function autoloadPlugin(identMap: Record<string, string>): Plugin {
   };
 }
 
-const MIME_TYPES: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-  ".webp": "image/webp",
-  ".avif": "image/avif",
-  ".ico": "image/x-icon",
-  ".woff": "font/woff",
-  ".woff2": "font/woff2",
-  ".ttf": "font/ttf",
-  ".eot": "application/vnd.ms-fontobject",
-  ".otf": "font/otf",
-  ".css": "text/css",
-  ".js": "text/javascript",
-  ".json": "application/json",
-  ".txt": "text/plain",
-  ".pdf": "application/pdf",
-};
-
-function mimeType(file: string): string {
-  return MIME_TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream";
+async function collectFiles(dir: string): Promise<Array<{ abs: string; rel: string }>> {
+  const entries = await fs.promises.readdir(dir, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((e) => e.isFile())
+    .map((e) => {
+      const abs = path.join(e.parentPath, e.name);
+      return { abs, rel: path.relative(dir, abs) };
+    });
 }
 
-async function collectFiles(dir: string): Promise<Array<{ abs: string; rel: string }>> {
-  const out: Array<{ abs: string; rel: string }> = [];
-  for (const entry of await fs.promises.readdir(dir, { withFileTypes: true })) {
-    const abs = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      for (const f of await collectFiles(abs)) {
-        out.push({ abs: f.abs, rel: path.join(entry.name, f.rel) });
-      }
-    } else {
-      out.push({ abs, rel: entry.name });
-    }
-  }
-  return out;
+function safePath(base: string, untrusted: string): string | null {
+  const resolved = path.resolve(base, untrusted);
+  return resolved.startsWith(base + path.sep) ? resolved : null;
 }
 
 function outputPath(dest: string, filename: string): string {
@@ -193,13 +175,16 @@ function staticCopyPlugin(targets: Array<{ src: string; dest: string; rename?: s
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        const url = req.url?.split("?")[0] ?? "";
+        const url = decodeURIComponent(req.url?.split("?")[0] ?? "");
         for (const { src, dest, rename } of targets) {
           if (src.endsWith("/**/*")) {
             const prefix = `/${dest}/`;
             if (url.startsWith(prefix)) {
-              fs.promises.readFile(path.join(src.slice(0, -5), url.slice(prefix.length)))
-                .then((content) => { res.setHeader("Content-Type", mimeType(url)); res.end(content); })
+              const srcDir = path.resolve(src.slice(0, -5));
+              const file = safePath(srcDir, url.slice(prefix.length));
+              if (!file) { next(); return; }
+              fs.promises.readFile(file)
+                .then((content) => res.end(content))
                 .catch(() => next());
               return;
             }
@@ -207,7 +192,7 @@ function staticCopyPlugin(targets: Array<{ src: string; dest: string; rename?: s
             const filename = rename ?? path.basename(src);
             if (url === `/${outputPath(dest, filename)}`) {
               fs.promises.readFile(src)
-                .then((content) => { res.setHeader("Content-Type", mimeType(src)); res.end(content); })
+                .then((content) => res.end(content))
                 .catch(() => next());
               return;
             }
@@ -219,8 +204,8 @@ function staticCopyPlugin(targets: Array<{ src: string; dest: string; rename?: s
   };
 }
 
-export async function viteConfigFromGraph(graph: MixGraph, mode: "development" | "production"): Promise<InlineConfig> {
-  const isProd = mode === "production";
+export async function viteConfigFromGraph(graph: MixGraph, mode?: "development" | "production"): Promise<InlineConfig> {
+  const isProd = (mode ?? process.env.NODE_ENV) === "production";
 
   const input: Record<string, string> = {};
 
@@ -237,6 +222,7 @@ export async function viteConfigFromGraph(graph: MixGraph, mode: "development" |
   const staticTargets: Array<{ src: string; dest: string; rename?: string }> = [];
 
   const resolvedPublic = path.resolve(graph.publicPath);
+  const publicPrefixRe = new RegExp(`^${escapeRegExp(ensurePosix(graph.publicPath))}/?`);
 
   function guardDest(dest: string) {
     const resolved = path.resolve(graph.publicPath, dest);
@@ -246,7 +232,7 @@ export async function viteConfigFromGraph(graph: MixGraph, mode: "development" |
   }
 
   for (const c of graph.copies) {
-    const normalizedDest = ensurePosix(c.dest).replace(new RegExp(`^${escapeRegExp(ensurePosix(graph.publicPath))}/?`), "");
+    const normalizedDest = ensurePosix(c.dest).replace(publicPrefixRe, "");
     guardDest(normalizedDest);
     const destDir = path.posix.dirname(normalizedDest);
     const base = path.posix.basename(normalizedDest);
@@ -260,7 +246,7 @@ export async function viteConfigFromGraph(graph: MixGraph, mode: "development" |
   }
 
   for (const cd of graph.copyDirs) {
-    const normalizedDest = ensurePosix(cd.dest).replace(new RegExp(`^${escapeRegExp(ensurePosix(graph.publicPath))}/?`), "");
+    const normalizedDest = ensurePosix(cd.dest).replace(publicPrefixRe, "");
     guardDest(normalizedDest);
     staticTargets.push({
       src: ensurePosix(cd.src) + "/**/*",
@@ -268,24 +254,21 @@ export async function viteConfigFromGraph(graph: MixGraph, mode: "development" |
     });
   }
 
-  const wantsJquery =
-    Object.values(graph.autoload).some((arr) => arr.includes("$") || arr.includes("jQuery") || arr.includes("window.jQuery")) ||
-    Object.keys(graph.autoload).some((k) => k.toLowerCase() === "jquery");
+  const autoloadMap: Record<string, string> = {};
+  for (const [module, identifiers] of Object.entries(graph.autoload)) {
+    for (const ident of identifiers) {
+      autoloadMap[ident] = module;
+    }
+  }
 
   const plugins: Plugin[] = [webpackCompatResolvePlugin()];
 
-  if (graph.js.some((e) => !!e.vue)) {
+  if (graph.vue) {
     plugins.push(vue());
   }
 
-  if (wantsJquery) {
-    plugins.push(
-      autoloadPlugin({
-        $: "jquery",
-        jQuery: "jquery",
-        "window.jQuery": "jquery",
-      })
-    );
+  if (Object.keys(autoloadMap).length) {
+    plugins.push(autoloadPlugin(autoloadMap));
   }
 
   if (staticTargets.length) {
