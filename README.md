@@ -49,7 +49,9 @@ const graph = mix()
   .autoload({ jquery: ["$", "jQuery", "window.jQuery"] })
   .toGraph();
 
-export default await viteConfigFromGraph(graph);
+const mode = process.env.NODE_ENV === "production" ? "production" : "development";
+
+export default await viteConfigFromGraph(graph, mode);
 ```
 
 Add scripts to your `package.json`:
@@ -86,7 +88,7 @@ npm run dev      # dev server
 | `.copyDirectory(src, dest)`         | Copy a directory to the output directory                    |
 | `.autoload(map)`                    | Inject globals (e.g. jQuery, Lodash)                        |
 | `.toGraph()`                        | Returns the build graph (pass to `viteConfigFromGraph`)     |
-| `viteConfigFromGraph(graph, mode?)` | Returns a Vite `InlineConfig` (mode defaults to `NODE_ENV`) |
+| `viteConfigFromGraph(graph, mode)`  | Returns a Vite `InlineConfig`                               |
 
 ## Examples
 
@@ -100,7 +102,9 @@ const graph = mix()
   .js("resources/assets/js/app.js", "public/js")
   .toGraph();
 
-export default await viteConfigFromGraph(graph);
+const mode = process.env.NODE_ENV === "production" ? "production" : "development";
+
+export default await viteConfigFromGraph(graph, mode);
 ```
 
 ### Sass / CSS
@@ -170,7 +174,9 @@ const graph = mix()
   .copyDirectory("resources/assets/fonts", "public/fonts")
   .toGraph();
 
-export default await viteConfigFromGraph(graph);
+const mode = process.env.NODE_ENV === "production" ? "production" : "development";
+
+export default await viteConfigFromGraph(graph, mode);
 ```
 
 ## Webpack compatibility handled
