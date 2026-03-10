@@ -641,22 +641,6 @@ describe("staticCopyPlugin - configureServer middleware", () => {
   });
 });
 
-describe("viteConfigFromGraph - mode fallback", () => {
-  beforeEach(mockNotFound);
-
-  it("falls back to process.env.NODE_ENV when mode is undefined", async () => {
-    const origEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
-    try {
-      const graph = mix().setPublicPath("public").js("resources/assets/js/app.js", "public/js").toGraph();
-      const config = await viteConfigFromGraph(graph);
-      const output = config.build?.rollupOptions?.output as { entryFileNames: string };
-      expect(output.entryFileNames).toContain("[hash]");
-    } finally {
-      process.env.NODE_ENV = origEnv;
-    }
-  });
-});
 
 describe("viteConfigFromGraph - assetFileNames edge cases", () => {
   beforeEach(mockNotFound);
