@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/hugoboss17/vite-mix/compare/vite-mix-v0.7.0...vite-mix-v0.7.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* change name to vite-mix only ([#46](https://github.com/hugoboss17/vite-mix/issues/46)) ([08cea63](https://github.com/hugoboss17/vite-mix/commit/08cea6380607983b4e20287ee1481145ac35e6f4))
+
 ## [0.7.0](https://github.com/hugoboss17/laravel-vite-mix/compare/laravel-vite-mix-v0.6.2...laravel-vite-mix-v0.7.0) (2026-03-10)
 
 
