@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/hugoboss17/vite-mix/compare/vite-mix-v0.7.3...vite-mix-v0.7.4) (2026-03-11)
+
+
+### Bug Fixes
+
+* add workflow_dispatch trigger to release-please ([#54](https://github.com/hugoboss17/vite-mix/issues/54)) ([cbe2182](https://github.com/hugoboss17/vite-mix/commit/cbe2182b5ba970a439f8126ad3b59cb554c6a2c0))
+
 ## [0.7.3](https://github.com/hugoboss17/vite-mix/compare/vite-mix-v0.7.2...vite-mix-v0.7.3) (2026-03-11)
 
 
