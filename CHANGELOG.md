@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/hugoboss17/vite-mix/compare/vite-mix-v0.7.1...vite-mix-v0.7.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* package name updated + supported version ([#50](https://github.com/hugoboss17/vite-mix/issues/50)) ([fb54964](https://github.com/hugoboss17/vite-mix/commit/fb54964f469edc116890b5f205594bb9de50d7a4))
+
 ## [0.7.1](https://github.com/hugoboss17/vite-mix/compare/vite-mix-v0.7.0...vite-mix-v0.7.1) (2026-03-11)
 
 
